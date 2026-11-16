@@ -16,7 +16,15 @@ A customer value and retention analysis for an Irish online retailer. It uses ~3
 - **Affiliates** ROI fell each month (1.71 → 0.62 → 0.60) and turned negative after January, so its spend should be re-evaluated.
 - Male customers, customers born in the 1950s–60s, and customers who allow contact have higher average profit. **Cork** is the largest high-value market outside Dublin.
 - Customers who reorder generate far more profit than one-time buyers. This gap motivated the retention model.
-- **Random Forest** was chosen (ROC-AUC 0.76, recall 0.95 on non-retained customers) over Logistic Regression (AUC 0.70) and a tuned XGBoost, because the goal is to catch at-risk customers.
+- Three retention models were compared on a held-out test set (class 0 = customers who did not reorder):
+
+  | Model | ROC-AUC | Class-0 recall | Class-0 precision | Accuracy |
+  |---|---|---|---|---|
+  | Logistic Regression | 0.70 | 0.85 | 0.50 | 0.65 |
+  | Random Forest (balanced) | 0.76 | 0.95 | 0.48 | 0.61 |
+  | XGBoost (SMOTE + randomized search) | 0.83 | 0.53 | 0.69 | 0.75 |
+
+  XGBoost ranks customers best (highest AUC). I recommended **Random Forest** at its default threshold because the business goal is to catch almost every at-risk customer, and a cheap retention offer sent to someone who would have reordered anyway costs little. The trade-off is low precision: many customers get flagged. Tuning XGBoost's decision threshold for recall is the natural next step.
 
 ## Methods & Tools
 
@@ -26,7 +34,7 @@ A customer value and retention analysis for an Irish online retailer. It uses ~3
 
 ## Limitations & What I'd Do Differently
 
-- **Promotion leakage**: `Total value of all promotions` counts promotions redeemed through June 30, including on later orders. Customers who reorder have more chances to redeem, so the model's top feature (promotions, 0.65 importance) partly reflects the outcome itself. Next time I would use only promotions on the first order, or measure features at a fixed cutoff date after registration.
+- **Promotion leakage**: per the dataset definitions, `Total value of all promotions` counts promotions redeemed through June 30, including on later orders. Customers who reorder have more chances to redeem, so the model's top feature (promotions, 0.65 importance) partly reflects the outcome itself. Next time I would use only promotions on the first order, or measure features at a fixed cutoff date after registration.
 - **Inconsistent profit definition**: `net_profit` subtracts promotions in some cells and not in others. I would define it once and reuse it.
 - **Missing cost data**: there is no cost data for Paid Social, Direct and Organic Search, so their ROI cannot be compared directly with the paid channels.
 - **Causality**: segment differences are descriptive. A test (e.g., a targeted discount A/B test) would be needed before acting on them.
